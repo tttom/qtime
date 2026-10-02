@@ -1,0 +1,220 @@
+/* ---------------------------------------------------------------
+   presentation timer - all styling lives here
+   --------------------------------------------------------------- */
+
+html {
+  --bg: #000;
+  --fg: #fff;
+
+  --fs: min(94vh, 60vw);   /* page filling digit size   */
+  --cw: 0.65em;            /* digit column width        */
+  --cell: 1em;             /* rollable cell height      */
+
+  background: var(--bg);
+  color: var(--fg);
+}
+
+/* --- the two modes, plus the warning overrides ----------------- */
+html.dark { --bg: #000; --fg: #fff; }
+html.light { --bg: #fff; --fg: #000; }
+
+/* --- warnings -----------------------------------------------------
+   dark mode keeps the deep red and yellow, both of which read well
+   on black.  Light mode needs the red turned up, or black digits are
+   lost on it, and the last minute swaps to red digits on yellow.   */
+html.red { --bg: #8b0000; }
+html.yellow { --fg: #ffd400; }
+
+html.light.red { --bg: #ff6666; }
+html.light.yellow { --bg: #ffd400; --fg: #b30000; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--fg);
+  /* Verdana for the lot of it, so nothing falls back to its own idea
+     of a face on the way in */
+  font-family: Verdana, Geneva, "DejaVu Sans", Tahoma, sans-serif;
+}
+
+body {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+}
+
+/* --- flashing: swap to the inverted scheme and back ------------
+   one flash = light -> dark = 0.5s, the count is a variable   */
+@keyframes flashkf {
+  0%, 100% { filter: none; }
+  50%      { filter: invert(1) hue-rotate(180deg); }
+}
+html.flash { animation: flashkf 0.5s var(--flash-n, 1) ease-in-out; }
+
+/* --- the colon: on for 75% of every second -------------------- */
+@keyframes blink {
+  0%, 72%   { opacity: 1; }
+  76%, 100% { opacity: 0; }
+}
+
+/* --- screen --------------------------------------------------- */
+#screen {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--fs);
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* which wheels are on screen */
+#display.mode-minutes .wheel { display: none; }
+#display.mode-minutes #m0    { display: block; order: 1; }
+#display.mode-minutes #m1    { display: block; order: 2; }
+#display.mode-minutes #colon { display: block; order: 3; }
+
+#display.mode-seconds .wheel { display: none; }
+#display.mode-seconds #colon { display: block; order: 1; }
+#display.mode-seconds #s0    { display: block; order: 2; }
+#display.mode-seconds #s1    { display: block; order: 3; }
+
+/* --- a rollable digit -----------------------------------------
+   the window is a shade taller than one cell, the mask fades the
+   neighbouring cells away so they are gone when a digit is centred.
+   Keeping the window close to the cell is what buys the digits their
+   size: every spare em here is an em that is not on the page.      */
+.wheel {
+  --cell: 1em;
+  position: relative;
+  width: var(--cw);
+  height: calc(var(--cell) * 1.06);
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 4%, #000 96%, transparent 100%);
+          mask-image: linear-gradient(to bottom, transparent 0, #000 4%, #000 96%, transparent 100%);
+}
+
+.strip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  transform: translateY(calc(var(--pos, 0) * var(--cell) * -1));
+  will-change: transform;
+}
+
+.cell {
+  height: var(--cell);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+#colon {
+  width: var(--cw);
+  margin: 0 calc(var(--cw) * -0.25);
+  text-align: center;
+  animation: blink 1s linear infinite;
+}
+
+/* no pulsating while the clock is standing still */
+#display.paused #colon { animation: none; opacity: 1; }
+
+/* at zero: pulsate ":00" all together */
+#display.pulse #colon,
+#display.pulse .wheel { animation: blink 1s linear infinite; }
+
+/* the minutes are shown on their own, so no nought in front of them */
+#m0.z .cell[data-d="0"] { visibility: hidden; }
+
+/* --- what is on show ------------------------------------------
+   The countdown is the point of the page and never leaves it.  The
+   controls round the edges do: once the pointer has gone, or has not
+   moved for a second, they fade out and leave the digits to the
+   screen.  Moving again brings them back.                             */
+#theme, #full, #list, #warn { transition: opacity 0.35s ease; }
+html:not(.awake) #theme,
+html:not(.awake) #full,
+html:not(.awake) #list,
+html:not(.awake) #warn { opacity: 0; pointer-events: none; }
+
+/* --- theme switch, top left ----------------------------------- */
+#theme {
+  position: fixed;
+  z-index: 3;
+  top: 0.3rem;
+  left: 0.5rem;
+  padding: 0 0.2em;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 4.4rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+/* --- list of times, top right --------------------------------- */
+#list {
+  position: fixed;
+  z-index: 3;
+  top: 0.5rem;
+  right: 0.5rem;
+  margin: 0;
+  padding: 0 0.25em;
+  list-style: none;
+  text-align: right;
+  font-size: 1.9rem;
+  line-height: 1.5;
+  touch-action: none;
+}
+
+#list li { padding: 0 0.1em; cursor: pointer; }
+
+/* --- full screen switch, bottom left --------------------------- */
+#full {
+  position: fixed;
+  z-index: 3;
+  bottom: 0.3rem;
+  left: 0.5rem;
+  padding: 0 0.2em;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 2.4rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+/* --- warning lead time, bottom right -------------------------- */
+#warn {
+  position: fixed;
+  z-index: 3;
+  bottom: 0.5rem;
+  right: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.3em;
+  font-size: 1.6rem;
+  touch-action: none;
+}
+
+#warn .lbl { opacity: 0.75; line-height: 1; }
+
+#warn .wheel { font-size: 2.6rem; }
+#warn .strip { transition: transform 0.3s ease-out; }
+#warn.dragging .strip { transition: none; }
