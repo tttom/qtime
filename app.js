@@ -11,6 +11,7 @@
   var themeBtn = document.getElementById('theme');
   var fullBtn = document.getElementById('full');
   var warnEl = document.getElementById('warn');
+  var bellBtn = document.getElementById('bell');
 
   var W = {
     m0: document.getElementById('m0'),
@@ -43,6 +44,7 @@
     hitWarn: false,
     hitMin: false,
     hitEnd: false,
+    muted: false,                  /* the bell is struck or passed over */
     phaseRed: false,
     phaseYellow: false,
     m: 15,                       /* minutes, fractional while dragging */
@@ -131,7 +133,8 @@
   function save() {
     try {
       localStorage.setItem(KEY, JSON.stringify({
-        theme: S.theme, set: S.set, warn: S.warn, presets: S.presets
+        theme: S.theme, set: S.set, warn: S.warn, presets: S.presets,
+        muted: S.muted
       }));
     } catch (err) {}
   }
@@ -141,6 +144,7 @@
     try { d = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (err) {}
     if (!d || typeof d !== 'object') return;
     if (d.theme === 'light' || d.theme === 'dark') S.theme = d.theme;
+    if (typeof d.muted === 'boolean') S.muted = d.muted;
     if (typeof d.set === 'number' && isFinite(d.set) && d.set >= 0) {
       S.set = Math.round(d.set / 60) * 60;
     }
@@ -231,6 +235,105 @@
     displayEl.classList.toggle('paused', p);
   }
 
+  /* --- the bell ----------------------------------------------------
+     No sound file is loaded: a bell is a handful of partials that do
+     not sit at whole multiples of one another, and each of them dies
+     away at its own rate, the high ones first.  That is what lets the
+     strike fade and still go on ringing.  Grown from the ratios of a
+     real bell, but the partials are near enough, so what comes out is
+     more a chime than a church tower.                               */
+  var BELL_HZ = 523.25;            /* the strike, five hundred and a bit */
+  var BELL_AT = 0.004;             /* seconds from silence to full voice  */
+  var BELL_GAP = FLASH_MS / 1000;  /* one strike for each light/dark turn  */
+  var BELL_LOUD = 0.5;             /* as much as the sum of them, halved  */
+  var BELL = [
+    /*  ratio   loudness   tail in seconds                        */
+    /*  0.50      0.62       3.20     the hum, heard under all    */
+    /*  1.00      1.00       2.40     the prime, the note itself   */
+    /*  1.19      0.55       1.70     the tierce                   */
+    /*  1.56      0.42       1.30     the quint                    */
+    /*  2.00      0.66       1.00     the nominal                  */
+    /*  2.51      0.30       0.62                                   */
+    /*  3.01      0.22       0.42                                   */
+    /*  4.17      0.14       0.26                                   */
+    /*  5.43      0.09       0.16     the upper ringing, gone soon */
+    [0.5, 0.62, 3.2], [1, 1, 2.4], [1.19, 0.55, 1.7], [1.56, 0.42, 1.3],
+    [2, 0.66, 1], [2.51, 0.3, 0.62], [3.01, 0.22, 0.42], [4.17, 0.14, 0.26],
+    [5.43, 0.09, 0.16]
+  ];
+
+  var BELL_SUM = 0;
+  for (var b = 0; b < BELL.length; b++) BELL_SUM += BELL[b][1];
+
+  var audio = null;                /* made once, and then kept */
+
+  /* One bell, one set of partials: each is a sine that is given its
+     own little slice of the total loudness and put out of its misery
+     over the length of its own tail. */
+  function strike(at, loud) {
+    var t = audio.currentTime + at;
+    for (var i = 0; i < BELL.length; i++) {
+      var p = BELL[i];
+      var o = audio.createOscillator();
+      var g = audio.createGain();
+      var peak = BELL_LOUD * loud * p[1] / BELL_SUM;
+      o.type = 'sine';
+      o.frequency.value = BELL_HZ * p[0];
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.linearRampToValueAtTime(peak, t + BELL_AT);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + p[2]);
+      o.connect(g);
+      g.connect(audio.destination);
+      o.start(t);
+      o.stop(t + p[2] + 0.02);
+    }
+  }
+
+  /* As many strikes as there are flashes, on the beat of them, each a
+     little quieter than the one before it so that the second and the
+     third do not pile on top of the first. */
+  function ding(times) {
+    if (S.muted) return;
+    for (var i = 0; i < times; i++) strike(i * BELL_GAP, 1 - 0.18 * i);
+  }
+
+  /* Browsers will not let a sound out until the page has been touched,
+     and a context made after that touch stays shut, so it is opened by
+     the first press and left open afterwards. */
+  function ringOn() {
+    if (!audio) {
+      var C = window.AudioContext || window.webkitAudioContext;
+      if (!C) return;
+      try { audio = new C(); } catch (err) { return; }
+    }
+    if (audio.state === 'suspended' && audio.resume) audio.resume();
+  }
+
+  ['pointerdown', 'keydown'].forEach(function (t) {
+    window.addEventListener(t, function once() {
+      window.removeEventListener(t, once);
+      ringOn();
+    });
+  });
+
+  /* --- the bell, as a switch ----------------------------------------
+     The glyph is the warning lead time as well, and it keeps it: the
+     bell rings alongside the wheels unless it is put to sleep.  It is
+     struck through when it is, so the state is read off the symbol and
+     not off any words.                                                */
+  function showBell() {
+    bellBtn.setAttribute('aria-pressed', S.muted ? 'true' : 'false');
+    bellBtn.setAttribute('aria-label', S.muted ? 'bell is muted' : 'bell rings');
+    bellBtn.setAttribute('title', S.muted ? 'bell is muted' : 'mute the bell');
+  }
+
+  bellBtn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    S.muted = !S.muted;
+    showBell();
+    save();
+  });
+
   /* --- flashing --------------------------------------------------- */
   var flashTimer = null;
   var phaseTimer = null;
@@ -254,6 +357,7 @@
     root.classList.remove('flash');
     void root.offsetWidth;                   /* let the animation restart */
     root.classList.add('flash');
+    ding(times);
     flashTimer = setTimeout(function () {
       root.classList.remove('flash');
       flashTimer = null;
@@ -747,6 +851,7 @@
   applyLook();
   setMode('minutes');
   setPaused(true);
+  showBell();
   var wanted = fromUrl();
   if (wanted !== null) { S.presets = []; S.set = wanted; S.left = wanted; }
   renderList();

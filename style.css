@@ -1,6 +1,6 @@
-/* ---------------------------------------------------------------
-   presentation timer - all styling lives here
-   --------------------------------------------------------------- */
+/*---------------------------------------------------------------
+    presentation timer - all styling lives here
+  --------------------------------------------------------------- */
 
 html {
   --bg: #000;
@@ -19,9 +19,9 @@ html.dark { --bg: #000; --fg: #fff; }
 html.light { --bg: #fff; --fg: #000; }
 
 /* --- warnings -----------------------------------------------------
-   dark mode keeps the deep red and yellow, both of which read well
-   on black.  Light mode needs the red turned up, or black digits are
-   lost on it, and the last minute swaps to red digits on yellow.   */
+  dark mode keeps the deep red and yellow, both of which read well
+  on black.  Light mode needs the red turned up, or black digits are
+  lost on it, and the last minute swaps to red digits on yellow.   */
 html.red { --bg: #8b0000; }
 html.yellow { --fg: #ffd400; }
 
@@ -35,6 +35,8 @@ html, body {
   overflow: hidden;
   background: var(--bg);
   color: var(--fg);
+  /* Verdana for the lot of it, so nothing falls back to its own idea
+     of a face on the way in */
   font-family: Verdana, sans-serif;
 }
 
@@ -90,10 +92,10 @@ html.flash { animation: flashkf 0.5s var(--flash-n, 1) ease-in-out; }
 #display.mode-seconds #s1    { display: block; order: 3; }
 
 /* --- a rollable digit -----------------------------------------
-   the window is a shade taller than one cell, the mask fades the
-   neighbouring cells away so they are gone when a digit is centred.
-   Keeping the window close to the cell is what buys the digits their
-   size: every spare em here is an em that is not on the page.      */
+  the window is a shade taller than one cell, the mask fades the
+  neighbouring cells away so they are gone when a digit is centred.
+  Keeping the window close to the cell is what buys the digits their
+  size: every spare em here is an em that is not on the page.      */
 .wheel {
   --cell: 1em;
   position: relative;
@@ -139,10 +141,10 @@ html.flash { animation: flashkf 0.5s var(--flash-n, 1) ease-in-out; }
 #m0.z .cell[data-d="0"] { visibility: hidden; }
 
 /* --- what is on show ------------------------------------------
-   The countdown is the point of the page and never leaves it.  The
-   controls round the edges do: once the pointer has gone, or has not
-   moved for a second, they fade out and leave the digits to the
-   screen.  Moving again brings them back.                             */
+  The countdown is the point of the page and never leaves it.  The
+  controls round the edges do: once the pointer has gone, or has not
+  moved for a second, they fade out and leave the digits to the
+  screen.  Moving again brings them back.                             */
 #theme, #full, #list, #warn { transition: opacity 0.35s ease; }
 html:not(.awake) #theme,
 html:not(.awake) #full,
@@ -211,8 +213,40 @@ html:not(.awake) #warn { opacity: 0; pointer-events: none; }
   touch-action: none;
 }
 
-#warn .lbl { opacity: 0.75; line-height: 1; }
-
 #warn .wheel { font-size: 2.6rem; }
 #warn .strip { transition: transform 0.3s ease-out; }
 #warn.dragging .strip { transition: none; }
+
+/* --- the bell as a switch -------------------------------------
+   The bell that rings with the warning is the same bell that says
+   how far ahead the warning is.  Pressed, it is struck through: the
+   state is on the symbol itself and not written out in words.     */
+#bell {
+  position: relative;
+  border: 0;
+  padding: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  line-height: 1;
+  opacity: 0.75;
+  cursor: pointer;
+}
+
+/* the stroke that puts it to sleep */
+#bell::after {
+  content: '';
+  position: absolute;
+  left: -0.08em;
+  right: -0.08em;
+  top: 52%;
+  height: 0.07em;
+  border-radius: 0.05em;
+  background: currentColor;
+  transform: rotate(-22deg);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+#bell[aria-pressed="true"] { opacity: 0.45; }
+#bell[aria-pressed="true"]::after { opacity: 1; }
