@@ -35,9 +35,7 @@ html, body {
   overflow: hidden;
   background: var(--bg);
   color: var(--fg);
-  /* Verdana for the lot of it, so nothing falls back to its own idea
-     of a face on the way in */
-  font-family: Verdana, Geneva, "DejaVu Sans", Tahoma, sans-serif;
+  font-family: Verdana, sans-serif;
 }
 
 body {

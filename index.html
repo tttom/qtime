@@ -1,35 +1,29 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Timer</title>
-<link rel="stylesheet" href="style.css">
-</head>
-<body>
-
-  <button id="theme" type="button" aria-label="switch dark / light mode">&#9680;</button>
-
-  <button id="full" type="button" aria-label="enter full screen">&#x26F6;</button>
-
-  <ul id="list"></ul>
-
-  <div id="warn">
-    <span class="lbl" role="img" aria-label="warn">&#x1F514;&#xFE0E;</span>
-    <div class="wheel sm" id="x0"><div class="strip" id="x0s"></div></div>
-    <div class="wheel sm" id="x1"><div class="strip" id="x1s"></div></div>
-  </div>
-
-  <main id="screen">
-    <div id="display" class="mode-minutes">
-      <div class="wheel" id="m0"><div class="strip" id="m0s"></div></div>
-      <div class="wheel" id="m1"><div class="strip" id="m1s"></div></div>
-      <div id="colon">:</div>
-      <div class="wheel" id="s0"><div class="strip" id="s0s"></div></div>
-      <div class="wheel" id="s1"><div class="strip" id="s1s"></div></div>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>QTime!</title>
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <button id="theme" type="button" aria-label="switch dark / light mode">&#9680;</button>
+    <button id="full" type="button" aria-label="enter full screen">&#x26F6;</button>
+    <ul id="list"></ul>
+    <div id="warn">
+      <button id="bell" type="button" aria-label="bell rings" aria-pressed="false">&#x1F514;&#xFE0E;</button>
+      <div class="wheel sm" id="x0"><div class="strip" id="x0s"></div></div>
+      <div class="wheel sm" id="x1"><div class="strip" id="x1s"></div></div>
     </div>
-  </main>
-
-  <script src="app.js"></script>
-</body>
+    <main id="screen">
+      <div id="display" class="mode-minutes">
+        <div class="wheel" id="m0"><div class="strip" id="m0s"></div></div>
+        <div class="wheel" id="m1"><div class="strip" id="m1s"></div></div>
+        <div id="colon">:</div>
+        <div class="wheel" id="s0"><div class="strip" id="s0s"></div></div>
+        <div class="wheel" id="s1"><div class="strip" id="s1s"></div></div>
+      </div>
+    </main>
+    <script src="app.js"></script>
+  </body>
 </html>
